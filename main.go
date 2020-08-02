@@ -1,25 +1,38 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/DestinyWang/gokit-test/endpoint"
 	"github.com/DestinyWang/gokit-test/services"
-	"github.com/DestinyWang/gokit-test/transport"
 	"github.com/DestinyWang/gokit-test/util"
 	httpTransport "github.com/go-kit/kit/transport/http"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
+	// flag
+	var name = flag.String("name", "", "service name")
+	var port = flag.Int("p", 0, "service port")
+	flag.Parse()
+	//
+	logrus.WithFields(logrus.Fields{
+		"name": *name,
+		"port": *port,
+	}).Info("server start")
+	util.ServicePort = *port
+	util.ServiceName = *name
+	var id = fmt.Sprintf("%s:%s", util.ServiceName, uuid.New().String())
 	var userService = &services.UserService{}
-	var endPoint = endpoint.GenUserEndpoint(userService)
+	var endPoint = services.GenUserEndpoint(userService)
 	// 创建 handler
-	var serverHandler = httpTransport.NewServer(endPoint, transport.DecodeUserReq, transport.EncodeUserResp)
+	var serverHandler = httpTransport.NewServer(endPoint, services.DecodeUserReq, services.EncodeUserResp)
 	// 路由
 	var router = mux.NewRouter()
 	router.Methods(http.MethodGet, http.MethodDelete, http.MethodPost).Path("/user/{uid:\\d+}").Handler(serverHandler)
@@ -30,10 +43,10 @@ func main() {
 	var errCh = make(chan error)
 	go func() {
 		// 注册服务
-		if err := util.RegisterService(); err != nil {
+		if err := util.RegisterService(id); err != nil {
 			errCh <- err
 		}
-		if err := http.ListenAndServe(":8000", router); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), router); err != nil {
 			logrus.WithError(err).Errorf("http server start fail")
 			errCh <- err
 		}
@@ -46,8 +59,9 @@ func main() {
 	}()
 	var getErr = <-errCh
 	logrus.WithError(getErr).Errorf("检测到服务异常, 开始注销服务")
-	if err := util.DeregisterService(); err != nil {
+	if err := util.DeregisterService(id); err != nil {
 		logrus.WithError(err).Errorf("deregister service fail")
 		panic(err)
 	}
+	time.Sleep(time.Second)
 }

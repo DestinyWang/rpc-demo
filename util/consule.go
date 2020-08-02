@@ -1,26 +1,37 @@
 package util
 
 import (
+	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/sirupsen/logrus"
 )
 
 var consulClient *consulApi.Client
 
-func RegisterService() (err error) {
+var (
+	ServiceName string
+	ServicePort int
+)
+
+func init() {
+
+}
+
+func RegisterService(id string) (err error) {
 	var config = consulApi.DefaultConfig()
 	config.Address = "192.168.0.108:8500"
 	var reg = &consulApi.AgentServiceRegistration{
-		ID:      "userservice",
-		Name:    "userservice",
+		ID:      id,
+		Name:    ServiceName,
 		Tags:    []string{"primary"},
-		Port:    8000,
+		Port:    ServicePort,
 		Address: "192.168.0.108",
 		Check: &consulApi.AgentServiceCheck{
 			Interval: "5s",
-			HTTP:     "http://192.168.0.108:8000/health",
+			HTTP:     fmt.Sprintf("http://192.168.0.108:%d/health", ServicePort),
 		},
 	}
+	logrus.Infof("reg=[%+v]", reg)
 
 	if consulClient, err = consulApi.NewClient(config); err != nil {
 		logrus.WithError(err).Errorf("init client fail")
@@ -33,6 +44,7 @@ func RegisterService() (err error) {
 	return nil
 }
 
-func DeregisterService() (err error) {
-	return consulClient.Agent().ServiceDeregister("userservice")
+func DeregisterService(id string) (err error) {
+	logrus.WithField("serviceId", id).Info("deregister service")
+	return consulClient.Agent().ServiceDeregister(id)
 }

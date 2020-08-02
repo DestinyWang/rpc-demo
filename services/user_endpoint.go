@@ -1,8 +1,7 @@
-package endpoint
+package services
 
 import (
 	"context"
-	"github.com/DestinyWang/gokit-test/services"
 	"github.com/go-kit/kit/endpoint"
 	"net/http"
 )
@@ -18,7 +17,7 @@ type UserResp struct {
 }
 
 // 定义 endPoint
-func GenUserEndpoint(userService services.IUserService) endpoint.Endpoint {
+func GenUserEndpoint(userService IUserService) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
 		var r = req.(UserReq)
 		var result string
@@ -26,9 +25,15 @@ func GenUserEndpoint(userService services.IUserService) endpoint.Endpoint {
 		case http.MethodGet: // 根据 id 获取名称
 			result = userService.GetName(r.Uid)
 		case http.MethodPost: // 添加用户
-			result = userService.PutUser(r.Uid, r.Username).Error()
+			if err = userService.PutUser(r.Uid, r.Username); err != nil {
+				return nil, err
+			}
+			result = "put succ"
 		case http.MethodDelete: //删除用户
-			result = userService.DelUser(r.Uid).Error()
+			if err = userService.DelUser(r.Uid); err != nil {
+				return nil, err
+			}
+			result = "delete succ"
 		}
 		return UserResp{
 			Result: result,

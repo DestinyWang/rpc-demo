@@ -1,10 +1,9 @@
-package transport
+package services
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/DestinyWang/gokit-test/endpoint"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -15,7 +14,10 @@ func DecodeUserReq(ctx context.Context, r *http.Request) (interface{}, error) {
 	var vars = mux.Vars(r)
 	if uidStr, ok := vars["uid"]; ok {
 		var uid, _ = strconv.ParseInt(uidStr, 10, 64)
-		return endpoint.UserReq{Uid: uid}, nil
+		return UserReq{
+			Uid:    uid,
+			Method: r.Method,
+		}, nil
 	}
 	return nil, errors.New("param err")
 }
