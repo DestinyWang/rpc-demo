@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/DestinyWang/gokit-test/services"
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,10 +31,25 @@ func main() {
 	util.ServicePort = *port
 	util.ServiceName = *name
 	var id = fmt.Sprintf("%s:%s", util.ServiceName, uuid.New().String())
+	// 初始化服务
 	var userService = &services.UserService{}
-	var endPoint = services.GenUserEndpoint(userService)
+	var limit = rate.NewLimiter(1, 3)
+	var endPoint = services.RateLimit(limit)(services.GenUserEndpoint(userService))
 	// 创建 handler
-	var serverHandler = httpTransport.NewServer(endPoint, services.DecodeUserReq, services.EncodeUserResp)
+	var options = []httpTransport.ServerOption{
+		httpTransport.ServerErrorEncoder(func(ctx context.Context, err error, w http.ResponseWriter) {
+			var contentType, body = "text/plain; charset=utf-8", []byte(err.Error())
+			w.Header().Set("Content-type", contentType)
+			if commonErr, ok := err.(*util.CommonErr); ok {
+				w.WriteHeader(commonErr.Code)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			w.Write(body)
+		}),
+	}
+
+	var serverHandler = httpTransport.NewServer(endPoint, services.DecodeUserReq, services.EncodeUserResp, options...)
 	// 路由
 	var router = mux.NewRouter()
 	router.Methods(http.MethodGet, http.MethodDelete, http.MethodPost).Path("/user/{uid:\\d+}").Handler(serverHandler)

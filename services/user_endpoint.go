@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"github.com/DestinyWang/gokit-test/util"
 	"github.com/go-kit/kit/endpoint"
+	"golang.org/x/time/rate"
 	"net/http"
 )
 
@@ -14,6 +16,18 @@ type UserReq struct {
 
 type UserResp struct {
 	Result string `json:"result"`
+}
+
+// 加入限流功能的中间件
+func RateLimit(limit *rate.Limiter) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			if !limit.Allow() {
+				return nil, util.GenCommonErr(http.StatusTooManyRequests, "too many requests", nil)
+			}
+			return next(ctx, request)
+		}
+	}
 }
 
 // 定义 endPoint
