@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"github.com/DestinyWang/gokit-test/util"
+	"github.com/DestinyWang/gokit-test/gokit_test/util"
 	"github.com/go-kit/kit/endpoint"
 	"golang.org/x/time/rate"
 	"net/http"

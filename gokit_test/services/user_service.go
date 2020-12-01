@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"github.com/DestinyWang/gokit-test/util"
+	"github.com/DestinyWang/gokit-test/gokit_test/util"
 )
 
 type IUserService interface {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	services "github.com/DestinyWang/gokit-test/client/services"
+	services "github.com/DestinyWang/gokit_test/client/services"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd"

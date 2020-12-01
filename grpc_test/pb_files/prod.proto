@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package services;
+
+message ProdRequest {
+  int32 prod_id = 1; // 商品 id
+}
+
+message ProdResponse {
+  int32 prod_stock = 1;// 商品库存
+}
+
+service ProdService {
+  rpc GetProdStock(ProdRequest) returns (ProdResponse);
+}
